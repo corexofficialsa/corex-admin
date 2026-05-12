@@ -952,7 +952,6 @@ function buildInvoicePdf(project, logoImage) {
     ["Subtotal", formatSar(project.price)],
     ["Discount", formatSar(project.discount)],
     ["Net Total", formatSar(netAmount(project))],
-    ["Pending Balance", formatSar(Math.max(netAmount(project) - project.advancePaid, 0))],
   ];
 
   totals.forEach((item, index) => {
