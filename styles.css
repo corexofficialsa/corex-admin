@@ -165,6 +165,25 @@ label span {
   font-weight: 700;
 }
 
+.remember-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.remember-row input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+}
+
+.remember-row span {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
 input,
 select,
 textarea {

@@ -1,5 +1,7 @@
 const STORAGE_KEY = "corex-admin-data-v1";
 const AUTH_KEY = "corex-admin-auth-v1";
+const AUTH_EXPIRY_KEY = "corex-admin-auth-expiry-v1";
+const REMEMBER_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 const LOGIN = {
   username: "COREX_OFFICIAL",
   password: "COREX3223!",
@@ -26,6 +28,7 @@ const loginScreen = document.getElementById("loginScreen");
 const appRoot = document.getElementById("appRoot");
 const loginForm = document.getElementById("loginForm");
 const loginError = document.getElementById("loginError");
+const rememberMeInput = document.getElementById("rememberMe");
 const logoutBtn = document.getElementById("logoutBtn");
 const menuItems = [...document.querySelectorAll(".menu-item")];
 const tabPanels = [...document.querySelectorAll(".tab-panel")];
@@ -114,9 +117,15 @@ function handleLogin(event) {
   event.preventDefault();
   const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value;
+  const rememberMe = rememberMeInput.checked;
 
   if (username === LOGIN.username && password === LOGIN.password) {
     localStorage.setItem(AUTH_KEY, "true");
+    if (rememberMe) {
+      localStorage.setItem(AUTH_EXPIRY_KEY, String(Date.now() + REMEMBER_DURATION_MS));
+    } else {
+      localStorage.removeItem(AUTH_EXPIRY_KEY);
+    }
     loginError.textContent = "";
     syncAuth();
     return;
@@ -127,14 +136,29 @@ function handleLogin(event) {
 
 function handleLogout() {
   localStorage.removeItem(AUTH_KEY);
+  localStorage.removeItem(AUTH_EXPIRY_KEY);
   loginForm.reset();
   syncAuth();
 }
 
 function syncAuth() {
-  const isAuthed = localStorage.getItem(AUTH_KEY) === "true";
+  const isAuthed = getAuthState();
   loginScreen.classList.toggle("hidden", isAuthed);
   appRoot.classList.toggle("hidden", !isAuthed);
+}
+
+function getAuthState() {
+  const isAuthed = localStorage.getItem(AUTH_KEY) === "true";
+  if (!isAuthed) return false;
+
+  const expiry = Number(localStorage.getItem(AUTH_EXPIRY_KEY) || 0);
+  if (!expiry) return true;
+
+  if (Date.now() <= expiry) return true;
+
+  localStorage.removeItem(AUTH_KEY);
+  localStorage.removeItem(AUTH_EXPIRY_KEY);
+  return false;
 }
 
 function handleCategoryChange() {
@@ -619,218 +643,13 @@ async function downloadInvoice(projectId) {
   }
 
   const logoSrc = await getLogoDataUrl();
-  const html = `
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <title>COREX Invoice #${String(project.invoiceNumber).padStart(4, "0")}</title>
-        <style>
-          * { box-sizing: border-box; }
-          body {
-            margin: 0;
-            background: #f3efe7;
-            color: #16130f;
-            font-family: Arial, sans-serif;
-          }
-          .invoice-sheet {
-            width: 210mm;
-            min-height: 297mm;
-            margin: 0 auto;
-            padding: 18mm 18mm 14mm;
-            background: #fffdfa;
-          }
-          .invoice-header,
-          .invoice-brand,
-          .invoice-summary-row,
-          .invoice-totals p {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-          }
-          .invoice-header {
-            padding-bottom: 18px;
-            border-bottom: 1px solid #ded5c6;
-          }
-          .invoice-brand img {
-            width: 64px;
-            height: 64px;
-            object-fit: contain;
-          }
-          .invoice-brand h1,
-          .invoice-brand p,
-          .invoice-meta p,
-          .invoice-section h2,
-          .invoice-table th,
-          .invoice-table td,
-          .invoice-note,
-          .invoice-totals p {
-            margin: 0;
-          }
-          .invoice-brand h1 {
-            font-size: 28px;
-            line-height: 1;
-          }
-          .invoice-brand p,
-          .invoice-meta p,
-          .invoice-note {
-            color: #6e6253;
-            font-size: 13px;
-          }
-          .invoice-meta {
-            text-align: right;
-          }
-          .invoice-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 18px;
-            margin-top: 24px;
-          }
-          .invoice-card {
-            padding: 16px;
-            border: 1px solid #e7dece;
-            border-radius: 14px;
-            background: #fcfaf6;
-          }
-          .invoice-section {
-            margin-top: 24px;
-          }
-          .invoice-section h2 {
-            font-size: 14px;
-            margin-bottom: 10px;
-            color: #7f6835;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-          }
-          .invoice-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-          }
-          .invoice-table th {
-            background: #f6f1e8;
-            color: #6b5a37;
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-          }
-          .invoice-table th,
-          .invoice-table td {
-            padding: 12px;
-            border-bottom: 1px solid #ece3d4;
-            text-align: left;
-          }
-          .invoice-totals {
-            margin-top: 18px;
-            margin-left: auto;
-            width: 280px;
-          }
-          .invoice-totals p {
-            padding: 8px 0;
-            border-bottom: 1px solid #ece3d4;
-          }
-          .invoice-totals p:last-child {
-            color: #7f6835;
-            font-weight: 700;
-          }
-          .invoice-footer {
-            margin-top: 26px;
-            padding-top: 16px;
-            border-top: 1px solid #ded5c6;
-          }
-          @page {
-            size: A4;
-            margin: 0;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="invoice-sheet">
-          <div class="invoice-header">
-            <div class="invoice-brand">
-              <img src="${logoSrc}" alt="COREX logo" />
-              <div>
-                <h1>COREX</h1>
-                <p>Premium Digital Services</p>
-                <p>Project Invoice</p>
-              </div>
-            </div>
-            <div class="invoice-meta">
-              <p><strong>Invoice:</strong> #${String(project.invoiceNumber).padStart(4, "0")}</p>
-              <p><strong>Date:</strong> ${formatDate(new Date().toISOString())}</p>
-              <p><strong>Client:</strong> ${project.completionClientName || project.clientName}</p>
-            </div>
-          </div>
-
-          <div class="invoice-grid">
-            <div class="invoice-card">
-              <div class="invoice-section">
-                <h2>Bill To</h2>
-                <p><strong>${project.completionClientName || project.clientName}</strong></p>
-                <p>${project.companyName}</p>
-                <p>${project.phone}</p>
-                <p>${project.email || "Email not provided"}</p>
-              </div>
-            </div>
-            <div class="invoice-card">
-              <div class="invoice-section">
-                <h2>Project Info</h2>
-                <p><strong>Category:</strong> ${project.category}</p>
-                <p><strong>Start Date:</strong> ${formatDate(project.startDate)}</p>
-                <p><strong>Handover Date:</strong> ${formatDate(project.handoverDate)}</p>
-                <p><strong>Website:</strong> ${project.websiteLink || "Pending"}</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="invoice-section">
-            <h2>Service Summary</h2>
-            <table class="invoice-table">
-              <thead>
-                <tr>
-                  <th>Service</th>
-                  <th>Details</th>
-                  <th>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>${project.category}</td>
-                  <td>${project.notes || "Project execution and delivery services"}</td>
-                  <td>${formatSar(project.price)}</td>
-                </tr>
-                <tr>
-                  <td>Discount</td>
-                  <td>Approved discount</td>
-                  <td>- ${formatSar(project.discount)}</td>
-                </tr>
-                <tr>
-                  <td>Advance Received</td>
-                  <td>Paid before handover</td>
-                  <td>- ${formatSar(project.advancePaid)}</td>
-                </tr>
-              </tbody>
-            </table>
-
-            <div class="invoice-totals">
-              <p><span>Subtotal</span><strong>${formatSar(project.price)}</strong></p>
-              <p><span>Discount</span><strong>${formatSar(project.discount)}</strong></p>
-              <p><span>Net Total</span><strong>${formatSar(netAmount(project))}</strong></p>
-              <p><span>Pending Balance</span><strong>${formatSar(Math.max(netAmount(project) - project.advancePaid, 0))}</strong></p>
-            </div>
-          </div>
-
-        </div>
-      </body>
-    </html>
-  `;
-  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const logoImage = await getImageBytes(logoSrc);
+  const pdfBytes = buildInvoicePdf(project, logoImage);
+  const blob = new Blob([pdfBytes], { type: "application/pdf" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `corex-invoice-${String(project.invoiceNumber).padStart(4, "0")}.html`;
+  link.download = `corex-invoice-${String(project.invoiceNumber).padStart(4, "0")}.pdf`;
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -986,4 +805,242 @@ async function getLogoDataUrl() {
   } catch {
     return logo.src;
   }
+}
+
+async function getImageBytes(source) {
+  if (!source) return null;
+  try {
+    const jpegDataUrl = await imageSourceToJpegDataUrl(source);
+    const image = await loadImage(jpegDataUrl);
+    const base64 = jpegDataUrl.split(",")[1];
+    return {
+      width: image.width,
+      height: image.height,
+      bytes: base64ToUint8Array(base64),
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function imageSourceToJpegDataUrl(source, maxWidth = 360, quality = 0.9) {
+  const image = await loadImage(source);
+  const scale = Math.min(1, maxWidth / image.width);
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  canvas.width = width;
+  canvas.height = height;
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, width, height);
+  context.drawImage(image, 0, 0, width, height);
+  return canvas.toDataURL("image/jpeg", quality);
+}
+
+function base64ToUint8Array(base64) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return bytes;
+}
+
+function buildInvoicePdf(project, logoImage) {
+  const pageWidth = 595.28;
+  const pageHeight = 841.89;
+  const margin = 48;
+  const gold = "0.50 0.41 0.21";
+  const muted = "0.43 0.38 0.32";
+  const dark = "0.09 0.08 0.06";
+  const lightFill = "0.99 0.98 0.96";
+  const border = "0.90 0.87 0.81";
+  const content = [];
+  let y = pageHeight - margin;
+
+  const textLine = (text, x, yPos, size = 12, color = dark) => {
+    content.push(`BT /F1 ${size} Tf ${color} rg 1 0 0 1 ${x.toFixed(2)} ${yPos.toFixed(2)} Tm (${escapePdfText(text)}) Tj ET`);
+  };
+
+  const line = (x1, y1, x2, y2, color = border, width = 1) => {
+    content.push(`${width} w ${color} RG ${x1.toFixed(2)} ${y1.toFixed(2)} m ${x2.toFixed(2)} ${y2.toFixed(2)} l S`);
+  };
+
+  const rect = (x, yPos, width, height, strokeColor = border, fillColor = lightFill) => {
+    content.push(`${fillColor} rg ${strokeColor} RG ${x.toFixed(2)} ${yPos.toFixed(2)} ${width.toFixed(2)} ${height.toFixed(2)} re B`);
+  };
+
+  if (logoImage) {
+    const logoWidth = 52;
+    const logoHeight = (logoImage.height / logoImage.width) * logoWidth;
+    const logoY = y - logoHeight + 10;
+    content.push(`q ${logoWidth.toFixed(2)} 0 0 ${logoHeight.toFixed(2)} ${margin.toFixed(2)} ${logoY.toFixed(2)} cm /Im1 Do Q`);
+  }
+
+  textLine("COREX", margin + 66, y - 4, 27, dark);
+  textLine("Premium Digital Services", margin + 66, y - 24, 11, muted);
+  textLine("Project Invoice", margin + 66, y - 39, 11, muted);
+
+  textLine(`Invoice #${String(project.invoiceNumber).padStart(4, "0")}`, pageWidth - 170, y - 4, 13, dark);
+  textLine(`Date: ${formatDate(new Date().toISOString())}`, pageWidth - 170, y - 22, 11, muted);
+  textLine(`Client: ${project.completionClientName || project.clientName}`, pageWidth - 170, y - 38, 11, muted);
+
+  y -= 70;
+  line(margin, y, pageWidth - margin, y);
+
+  y -= 28;
+  const cardWidth = (pageWidth - margin * 2 - 16) / 2;
+  const cardHeight = 110;
+  rect(margin, y - cardHeight, cardWidth, cardHeight);
+  rect(margin + cardWidth + 16, y - cardHeight, cardWidth, cardHeight);
+
+  textLine("Bill To", margin + 14, y - 22, 12, gold);
+  textLine(project.completionClientName || project.clientName, margin + 14, y - 42, 12, dark);
+  textLine(project.companyName, margin + 14, y - 60, 11, muted);
+  textLine(project.phone, margin + 14, y - 78, 11, muted);
+  textLine(project.email || "Email not provided", margin + 14, y - 96, 11, muted);
+
+  const infoX = margin + cardWidth + 30;
+  textLine("Project Info", infoX, y - 22, 12, gold);
+  textLine(`Category: ${project.category}`, infoX, y - 42, 11, dark);
+  textLine(`Start: ${formatDate(project.startDate)}`, infoX, y - 60, 11, muted);
+  textLine(`Handover: ${formatDate(project.handoverDate)}`, infoX, y - 78, 11, muted);
+  textLine(`Website: ${project.websiteLink || "Pending"}`, infoX, y - 96, 11, muted);
+
+  y -= cardHeight + 34;
+  textLine("Service Summary", margin, y, 12, gold);
+
+  y -= 16;
+  const tableX = margin;
+  const tableWidth = pageWidth - margin * 2;
+  const rowHeights = [24, 38, 28, 28];
+  const col1 = 140;
+  const col3 = 100;
+  const col2 = tableWidth - col1 - col3;
+  const tableTotalHeight = rowHeights.reduce((sum, value) => sum + value, 0);
+  const tableTop = y;
+
+  rect(tableX, tableTop - rowHeights[0], tableWidth, rowHeights[0], border, "0.96 0.95 0.92");
+  line(tableX + col1, tableTop, tableX + col1, tableTop - tableTotalHeight);
+  line(tableX + col1 + col2, tableTop, tableX + col1 + col2, tableTop - tableTotalHeight);
+  textLine("Service", tableX + 10, tableTop - 16, 10, gold);
+  textLine("Details", tableX + col1 + 10, tableTop - 16, 10, gold);
+  textLine("Amount", tableX + col1 + col2 + 10, tableTop - 16, 10, gold);
+
+  const rows = [
+    [project.category, truncateText(project.notes || "Project execution and delivery services", 58), formatSar(project.price)],
+    ["Discount", "Approved discount", `- ${formatSar(project.discount)}`],
+    ["Advance Received", "Paid before handover", `- ${formatSar(project.advancePaid)}`],
+  ];
+
+  let currentTop = tableTop - rowHeights[0];
+  rows.forEach((row, index) => {
+    const rowHeight = rowHeights[index + 1];
+    rect(tableX, currentTop - rowHeight, tableWidth, rowHeight, border, "1.00 1.00 1.00");
+    line(tableX + col1, currentTop, tableX + col1, currentTop - rowHeight);
+    line(tableX + col1 + col2, currentTop, tableX + col1 + col2, currentTop - rowHeight);
+    textLine(row[0], tableX + 10, currentTop - 18, 10.5, dark);
+    textLine(row[1], tableX + col1 + 10, currentTop - 18, 10, muted);
+    textLine(row[2], tableX + col1 + col2 + 10, currentTop - 18, 10.5, dark);
+    currentTop -= rowHeight;
+  });
+
+  y = currentTop - 26;
+  const totalsX = pageWidth - margin - 210;
+  const totals = [
+    ["Subtotal", formatSar(project.price)],
+    ["Discount", formatSar(project.discount)],
+    ["Net Total", formatSar(netAmount(project))],
+    ["Pending Balance", formatSar(Math.max(netAmount(project) - project.advancePaid, 0))],
+  ];
+
+  totals.forEach((item, index) => {
+    line(totalsX, y - index * 24, pageWidth - margin, y - index * 24, border, 0.8);
+    textLine(item[0], totalsX + 6, y - 16 - index * 24, 11, index === 3 ? gold : muted);
+    textLine(item[1], pageWidth - margin - 90, y - 16 - index * 24, 11, index === 3 ? gold : dark);
+  });
+
+  const objects = [];
+  const addObject = (value) => {
+    objects.push(value);
+    return objects.length;
+  };
+
+  const fontId = addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+  let imageId = null;
+  if (logoImage) {
+    imageId = addObject(streamObject(
+      `<< /Type /XObject /Subtype /Image /Width ${logoImage.width} /Height ${logoImage.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${logoImage.bytes.length} >>`,
+      logoImage.bytes,
+    ));
+  }
+
+  const resources = imageId
+    ? `<< /Font << /F1 ${fontId} 0 R >> /XObject << /Im1 ${imageId} 0 R >> >>`
+    : `<< /Font << /F1 ${fontId} 0 R >> >>`;
+
+  const contentBytes = new TextEncoder().encode(content.join("\n"));
+  const contentId = addObject(streamObject(`<< /Length ${contentBytes.length} >>`, contentBytes));
+  const pagesId = objects.length + 2;
+  const pageId = addObject(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources ${resources} /Contents ${contentId} 0 R >>`);
+  addObject(`<< /Type /Pages /Count 1 /Kids [${pageId} 0 R] >>`);
+  const catalogId = addObject(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
+
+  return buildPdfBytes(objects, catalogId);
+}
+
+function buildPdfBytes(objects, rootId) {
+  const encoder = new TextEncoder();
+  const chunks = [encoder.encode("%PDF-1.4\n%\xFF\xFF\xFF\xFF\n")];
+  const offsets = [0];
+  let length = chunks[0].length;
+
+  objects.forEach((object, index) => {
+    offsets.push(length);
+    const bytes = typeof object === "string" ? encoder.encode(`${index + 1} 0 obj\n${object}\nendobj\n`) : objectToBytes(index + 1, object);
+    chunks.push(bytes);
+    length += bytes.length;
+  });
+
+  const xrefOffset = length;
+  let xref = `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (let index = 1; index < offsets.length; index += 1) {
+    xref += `${String(offsets[index]).padStart(10, "0")} 00000 n \n`;
+  }
+  xref += `trailer\n<< /Size ${objects.length + 1} /Root ${rootId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  chunks.push(encoder.encode(xref));
+
+  return concatUint8Arrays(chunks);
+}
+
+function objectToBytes(id, object) {
+  const encoder = new TextEncoder();
+  const header = encoder.encode(`${id} 0 obj\n${object.dictionary}\nstream\n`);
+  const footer = encoder.encode(`\nendstream\nendobj\n`);
+  return concatUint8Arrays([header, object.bytes, footer]);
+}
+
+function streamObject(dictionary, bytes) {
+  return { dictionary, bytes };
+}
+
+function concatUint8Arrays(arrays) {
+  const totalLength = arrays.reduce((sum, array) => sum + array.length, 0);
+  const result = new Uint8Array(totalLength);
+  let offset = 0;
+  arrays.forEach((array) => {
+    result.set(array, offset);
+    offset += array.length;
+  });
+  return result;
+}
+
+function escapePdfText(text) {
+  return String(text).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+}
+
+function truncateText(text, limit) {
+  const value = String(text || "");
+  return value.length > limit ? `${value.slice(0, limit - 3)}...` : value;
 }
