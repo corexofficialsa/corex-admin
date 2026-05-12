@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>COREX Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+
+    <main class="shell">
+      <section class="login-screen" id="loginScreen">
+        <div class="login-card glass">
+          <div class="brand-lockup">
+            <img src="./assets/corex-logo.png" alt="COREX logo" class="brand-logo" />
+            <div>
+              <p class="eyebrow">Premium Admin Console</p>
+              <h1>COREX Command Desk</h1>
+              <p class="subtle">
+                Manage projects, revenue, delivery progress, and branded invoices in one place.
+              </p>
+            </div>
+          </div>
+
+          <form id="loginForm" class="login-form">
+            <label>
+              <span>Username</span>
+              <input type="text" id="username" placeholder="Enter username" required />
+            </label>
+            <label>
+              <span>Password</span>
+              <input type="password" id="password" placeholder="Enter password" required />
+            </label>
+            <button type="submit" class="primary-btn">Enter Admin Panel</button>
+            <p class="helper-text">Secure access for COREX team only.</p>
+            <p id="loginError" class="error-text" aria-live="polite"></p>
+          </form>
+        </div>
+      </section>
+
+      <section class="app hidden" id="appRoot">
+        <aside class="sidebar glass" id="sidebar">
+          <div class="sidebar-top">
+            <div class="sidebar-brand">
+              <img src="./assets/corex-logo.png" alt="COREX logo" class="sidebar-logo" />
+              <div>
+                <p class="eyebrow">COREX</p>
+                <h2>Admin Desk</h2>
+              </div>
+            </div>
+            <button class="menu-close" id="menuClose" aria-label="Close menu">×</button>
+          </div>
+
+          <nav class="menu">
+            <button class="menu-item active" data-tab="dashboard">Dashboard</button>
+            <button class="menu-item" data-tab="add-project">Add Project</button>
+            <button class="menu-item" data-tab="ongoing">Ongoing Projects</button>
+            <button class="menu-item" data-tab="completed">Completed Projects</button>
+          </nav>
+
+          <div class="sidebar-footer">
+            <p class="mini-stat-label">Current invoice start</p>
+            <p class="mini-stat-value" id="invoiceCounterLabel">#0034</p>
+          </div>
+        </aside>
+
+        <div class="content-area">
+          <header class="topbar glass">
+            <div>
+              <p class="eyebrow">COREX admin panel</p>
+              <h1 id="pageTitle">Dashboard Overview</h1>
+            </div>
+            <div class="topbar-actions">
+              <button class="ghost-btn mobile-menu-btn" id="menuOpen">Menu</button>
+              <button class="ghost-btn" id="logoutBtn">Logout</button>
+            </div>
+          </header>
+
+          <section class="tab-panel active" id="tab-dashboard">
+            <div class="hero-banner glass">
+              <div>
+                <p class="eyebrow">Business Snapshot</p>
+                <h2>Track revenue, delivery speed, and project movement at a glance.</h2>
+              </div>
+              <div class="hero-badge">
+                <span>Live Summary</span>
+                <strong id="totalProjectsHero">0 Projects</strong>
+              </div>
+            </div>
+
+            <div class="stats-grid" id="statsGrid"></div>
+
+            <div class="dashboard-grid">
+              <article class="panel glass">
+                <div class="panel-head">
+                  <div>
+                    <p class="eyebrow">Monthly Comparison</p>
+                    <h3>This Month vs Last Month</h3>
+                  </div>
+                </div>
+                <canvas id="comparisonChart" height="280"></canvas>
+              </article>
+
+              <article class="panel glass">
+                <div class="panel-head">
+                  <div>
+                    <p class="eyebrow">Recent Activity</p>
+                    <h3>Latest Project Updates</h3>
+                  </div>
+                </div>
+                <div id="activityFeed" class="activity-feed"></div>
+              </article>
+            </div>
+          </section>
+
+          <section class="tab-panel" id="tab-add-project">
+            <article class="panel glass">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">New Client Work</p>
+                  <h3>Add Project Details</h3>
+                </div>
+              </div>
+
+              <form id="projectForm" class="project-form">
+                <div class="form-grid">
+                  <label>
+                    <span>Client Name</span>
+                    <input type="text" name="clientName" required />
+                  </label>
+                  <label>
+                    <span>Company Name</span>
+                    <input type="text" name="companyName" required />
+                  </label>
+                  <label>
+                    <span>Client Phone Number</span>
+                    <input type="tel" name="phone" required />
+                  </label>
+                  <label>
+                    <span>Client Email</span>
+                    <input type="email" name="email" placeholder="Optional" />
+                  </label>
+                  <label>
+                    <span>Work Category</span>
+                    <select name="category" id="categorySelect" required>
+                      <option value="">Select category</option>
+                      <option value="SEO">SEO</option>
+                      <option value="Web Development">Web Development</option>
+                      <option value="Complete Project">Complete Project</option>
+                      <option value="Custom Work">Custom Work</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Project Price (SAR)</span>
+                    <input type="number" name="price" id="priceInput" required readonly />
+                  </label>
+                  <label>
+                    <span>Discount (SAR)</span>
+                    <input type="number" name="discount" min="0" value="0" />
+                  </label>
+                  <label>
+                    <span>Advance Received (SAR)</span>
+                    <input type="number" name="advancePaid" min="0" value="0" />
+                  </label>
+                  <label>
+                    <span>Start Date</span>
+                    <input type="date" name="startDate" required />
+                  </label>
+                  <label>
+                    <span>Handover Date</span>
+                    <input type="date" name="handoverDate" required />
+                  </label>
+                  <label class="full-width">
+                    <span>Project Scope / Notes</span>
+                    <textarea name="notes" rows="4" placeholder="Write project details, deliverables, and notes..."></textarea>
+                  </label>
+                </div>
+
+                <div class="price-note" id="priceNote">
+                  Category pricing is automatic: SEO and Web Development = 1500 SAR, Complete Project = 3000 SAR, Custom Work can be entered manually.
+                </div>
+
+                <button type="submit" class="primary-btn">Save Project to Ongoing</button>
+              </form>
+            </article>
+          </section>
+
+          <section class="tab-panel" id="tab-ongoing">
+            <article class="panel glass">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Execution Pipeline</p>
+                  <h3>Ongoing Projects</h3>
+                </div>
+              </div>
+              <div id="ongoingProjectsList" class="card-list"></div>
+            </article>
+          </section>
+
+          <section class="tab-panel" id="tab-completed">
+            <article class="panel glass">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Delivered Work</p>
+                  <h3>Completed Projects</h3>
+                </div>
+              </div>
+              <div id="completedProjectsList" class="completed-grid"></div>
+            </article>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <div class="modal hidden" id="projectModal">
+      <div class="modal-backdrop" data-close-modal="true"></div>
+      <div class="modal-card glass">
+        <button class="modal-close" id="modalClose" aria-label="Close details">×</button>
+        <div id="modalContent"></div>
+      </div>
+    </div>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
