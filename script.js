@@ -6,8 +6,9 @@ const LOGIN = {
 };
 
 const PRICE_MAP = {
-  SEO: 1500,
-  "Web Development": 1500,
+  SEO: 500,
+  "Web Development": 100,
+  "Web Development + SEO": 1500,
   "Complete Project": 3000,
 };
 
