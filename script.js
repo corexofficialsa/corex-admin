@@ -82,11 +82,13 @@ function bindEvents() {
     const downloadTrigger = event.target.closest("[data-download-invoice]");
     const completeTrigger = event.target.closest("[data-complete-project]");
     const websiteTrigger = event.target.closest("[data-visit-website]");
+    const deleteTrigger = event.target.closest("[data-delete-project]");
 
     if (viewTrigger) openProjectModal(viewTrigger.dataset.viewProject, viewTrigger.dataset.type);
     if (downloadTrigger) downloadInvoice(downloadTrigger.dataset.downloadInvoice);
     if (completeTrigger) renderCompleteProjectForm(completeTrigger.dataset.completeProject);
     if (websiteTrigger) window.open(websiteTrigger.dataset.visitWebsite, "_blank", "noopener");
+    if (deleteTrigger) deleteCompletedProject(deleteTrigger.dataset.deleteProject);
   });
 
   document.addEventListener("change", async (event) => {
@@ -347,6 +349,7 @@ function renderCompletedProjects() {
           </div>
           <div class="action-row">
             <button class="detail-btn" data-view-project="${project.id}" data-type="completed">See Details</button>
+            <button class="delete-btn" data-delete-project="${project.id}">Delete</button>
           </div>
         </article>
       `,
@@ -672,6 +675,19 @@ function setActiveTab(tabName) {
 
 function closeModal() {
   projectModal.classList.add("hidden");
+}
+
+function deleteCompletedProject(id) {
+  const project = state.projects.find((p) => p.id === id);
+  if (!project) return;
+  const confirmed = window.confirm(`Delete "${project.completionClientName || project.clientName}"? This cannot be undone.`);
+  if (!confirmed) return;
+  state.projects = state.projects.filter((p) => p.id !== id);
+  if (!persistStateSafely()) return;
+  renderStats();
+  renderActivity();
+  renderCompletedProjects();
+  renderChart();
 }
 
 function persistState() {

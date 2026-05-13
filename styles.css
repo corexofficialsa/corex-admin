@@ -542,6 +542,24 @@ textarea {
   justify-content: center;
 }
 
+.delete-btn {
+  border: 0;
+  cursor: pointer;
+  border-radius: 0.95rem;
+  min-height: 3rem;
+  padding: 0.9rem 1.2rem;
+  font-weight: 700;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+  background: rgba(255, 143, 122, 0.1);
+  color: var(--danger);
+  border: 1px solid rgba(255, 143, 122, 0.3);
+}
+
+.delete-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 143, 122, 0.2);
+}
+
 .status-chip,
 .tag {
   border-radius: 999px;
