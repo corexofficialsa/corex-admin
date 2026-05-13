@@ -188,7 +188,7 @@ function handleProjectSubmit(event) {
   const project = {
     id: crypto.randomUUID(),
     status: "ongoing",
-    clientName: formData.get("clientName").trim(),
+    clientName: formData.get("clientName").trim() || "—",
     companyName: formData.get("companyName").trim(),
     phone: formData.get("phone").trim(),
     email: formData.get("email").trim(),
